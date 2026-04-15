@@ -10,8 +10,8 @@ Uso:
 """
 import sys
 from pathlib import Path
-from extractor import extract_text_from_pdf
-from processor import clean_text, get_estadisticas, save_output
+from src.extractor import extract_text_from_pdf
+from src.processor import clean_text, get_estadisticas, save_output
 def main() -> None:
     """Punto de entrada principal."""
     print("=" * 80)
