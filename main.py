@@ -10,8 +10,8 @@ Uso:
 """
 import sys
 from pathlib import Path
-from src.src.extractor import extract_text_from_pdf
-from src.processor import clean_text, get_estadisticas, save_output
+from extractor import extract_text_from_pdf
+from processor import clean_text, get_estadisticas, save_output
 def main() -> None:
     """Punto de entrada principal."""
     print("=" * 80)
@@ -25,8 +25,8 @@ def main() -> None:
     ruta_salida: Path = (
         Path(argumentos[1]) if len(argumentos) >= 2 else Path("resultado.txt")
     )
-    print(f"\n📄 PDF: {ruta_pdf}")
-    print(f"📝 Salida: {ruta_salida}")
+    print(f"\n PDF: {ruta_pdf}")
+    print(f" Salida: {ruta_salida}")
     print("\n[1/4] Extrayendo texto...")
     texto_crudo: str = extract_text_from_pdf(ruta_pdf)
     print(f"   ✓ {len(texto_crudo)} caracteres extraídos")
