@@ -1,26 +1,22 @@
-"""Punto de entrada de la aplicación FastAPI."""
 from fastapi import FastAPI
-
-from app.api.exception_handlers import domain_exception_handler
-from app.api.routes import user_routes
 from app.core.config import settings
-from app.core.exceptions import DomainException
 
+app = FastAPI(
+    title="PDF Extractor API",
+    version=settings.API_V1_STR,
+    debug=settings.DEBUG
+)
 
-def create_application() -> FastAPI:
-    """Factory para crear la aplicación FastAPI."""
-    application = FastAPI(
-        title=settings.app_name,
-        debug=settings.debug_mode,
-    )
+@app.get("/")
+def root():
+    return {
+        "message": "Bienvenida a la API de Extracción de PDF",
+        "status": "Online",
+        "db_name": settings.DB_NAME
+    }
+    
+# Al principio de los imports:
+from app.api.v1.pdf_router import router as pdf_router
 
-    # Registro de manejadores de excepciones
-    application.add_exception_handler(DomainException, domain_exception_handler)
-
-    # Registro de rutas
-    application.include_router(user_routes.router)
-
-    return application
-
-
-app = create_application()
+# Debajo de app = FastAPI(...):
+app.include_router(pdf_router, prefix="/api/v1", tags=["Documentos"])
