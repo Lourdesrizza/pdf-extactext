@@ -1,34 +1,28 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-import io
+from app.services.pdf_service import PDFService
 
 router = APIRouter()
 
 @router.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
-    # 1. VALIDACIÓN DE FORMATO (Requerimiento de la Etapa 1)
-    # Verificamos la extensión y el tipo de contenido
-    if not file.filename.endswith(".pdf") and file.content_type != "application/pdf":
-        raise HTTPException(
-            status_code=400, 
-            detail="El archivo debe ser un PDF"
-        )
+    # 1. Validación de formato
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Formato no válido")
 
-    # 2. VALIDACIÓN DE TAMAÑO (Consideraciones)
-    # Leemos el contenido para saber cuánto pesa (ejemplo: max 5MB)
     content = await file.read()
-    max_size = 5 * 1024 * 1024  # 5 Megabytes
     
-    if len(content) > max_size:
-        raise HTTPException(
-            status_code=400, 
-            detail="El archivo es demasiado grande (máximo 5MB)"
-        )
+    # 2. Generar Checksum (Para el requerimiento de duplicados)
+    checksum = PDFService.get_checksum(content)
+    
+    # 3. Extraer texto
+    text = PDFService.extract_text(content)
+    
+    if not text:
+        raise HTTPException(status_code=400, detail="El PDF no contiene texto extraíble")
 
-    # 3. PROCESAMIENTO (Aquí llamaremos al Rol de Servicio más adelante)
-    # Por ahora devolvemos un éxito para que el test pase
     return {
         "filename": file.filename,
-        "content_type": file.content_type,
-        "size": len(content),
-        "message": "Archivo recibido y validado con éxito"
+        "checksum": checksum,
+        "extracted_text_preview": text[:100] + "...", # Un adelanto
+        "message": "Texto extraído correctamente"
     }
