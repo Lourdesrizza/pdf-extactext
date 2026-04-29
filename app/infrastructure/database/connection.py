@@ -1,22 +1,20 @@
-"""Configuración de conexión a base de datos."""
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
-
+"""Configuración de conexión a base de datos MongoDB."""
+from motor.motor_asyncio import AsyncIOMotorClient
 from app.core.config import settings
 
-engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# 1. Creamos el cliente de MongoDB conectado a la URL de tus settings
+client = AsyncIOMotorClient(settings.DATABASE_URL)
 
-Base = declarative_base()
+# 2. Seleccionamos el nombre de tu base de datos (podés cambiar "pdf_extractor_db" al nombre que quieras)
+database = client.pdf_extractor_db
 
-
-def get_database_session():
-    """Generador de sesiones de base de datos."""
-    session = SessionLocal()
+# 3. Hacemos la función asíncrona porque Motor trabaja de forma no bloqueante
+async def get_database_session():
+    """Generador de conexión a la base de datos MongoDB para FastAPI."""
     try:
-        yield session
+        # En MongoDB, simplemente entregamos la base de datos entera
+        yield database
     finally:
-        session.close()
+        # Nota: Motor maneja el cierre de conexiones automáticamente mediante un "pool".
+        # No necesitamos cerrar la sesión en cada request como hacíamos en SQL.
+        pass

@@ -1,4 +1,5 @@
 """Rutas API para gestión de usuarios."""
+
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -17,13 +18,23 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user(
+async def create_user(
     request: UserCreateRequest,
     user_service: UserService = Depends(get_user_service),
 ) -> UserResponse:
-    """Crea un nuevo usuario."""
+    """Crea un nuevo usuario.
+
+    Args:
+        request: Datos del usuario a crear.
+
+    Returns:
+        Usuario creado con su ID asignado.
+
+    Raises:
+        HTTPException: 400 si el email ya está registrado.
+    """
     try:
-        return user_service.create_user(request)
+        return await user_service.create_user(request)
     except ValidationException as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -32,13 +43,23 @@ def create_user(
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-def get_user(
-    user_id: int,
+async def get_user(
+    user_id: str,
     user_service: UserService = Depends(get_user_service),
 ) -> UserResponse:
-    """Obtiene un usuario por ID."""
+    """Obtiene un usuario por ID.
+
+    Args:
+        user_id: ID del usuario (string, formato MongoDB ObjectId).
+
+    Returns:
+        Usuario encontrado.
+
+    Raises:
+        HTTPException: 404 si el usuario no existe.
+    """
     try:
-        return user_service.get_user_by_id(user_id)
+        return await user_service.get_user_by_id(user_id)
     except NotFoundException as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -47,22 +68,37 @@ def get_user(
 
 
 @router.get("/", response_model=List[UserResponse])
-def get_all_users(
+async def get_all_users(
     user_service: UserService = Depends(get_user_service),
 ) -> List[UserResponse]:
-    """Obtiene todos los usuarios."""
-    return user_service.get_all_users()
+    """Obtiene todos los usuarios.
+
+    Returns:
+        Lista de todos los usuarios registrados.
+    """
+    return await user_service.get_all_users()
 
 
 @router.put("/{user_id}", response_model=UserResponse)
-def update_user(
-    user_id: int,
+async def update_user(
+    user_id: str,
     request: UserUpdateRequest,
     user_service: UserService = Depends(get_user_service),
 ) -> UserResponse:
-    """Actualiza un usuario existente."""
+    """Actualiza un usuario existente.
+
+    Args:
+        user_id: ID del usuario a actualizar.
+        request: Datos actualizados del usuario.
+
+    Returns:
+        Usuario actualizado.
+
+    Raises:
+        HTTPException: 404 si el usuario no existe.
+    """
     try:
-        return user_service.update_user(user_id, request)
+        return await user_service.update_user(user_id, request)
     except NotFoundException as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -71,13 +107,23 @@ def update_user(
 
 
 @router.patch("/{user_id}/deactivate", response_model=UserResponse)
-def deactivate_user(
-    user_id: int,
+async def deactivate_user(
+    user_id: str,
     user_service: UserService = Depends(get_user_service),
 ) -> UserResponse:
-    """Desactiva un usuario."""
+    """Desactiva un usuario.
+
+    Args:
+        user_id: ID del usuario a desactivar.
+
+    Returns:
+        Usuario desactivado.
+
+    Raises:
+        HTTPException: 404 si el usuario no existe.
+    """
     try:
-        return user_service.deactivate_user(user_id)
+        return await user_service.deactivate_user(user_id)
     except NotFoundException as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -86,13 +132,20 @@ def deactivate_user(
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(
-    user_id: int,
+async def delete_user(
+    user_id: str,
     user_service: UserService = Depends(get_user_service),
 ) -> None:
-    """Elimina un usuario."""
+    """Elimina un usuario.
+
+    Args:
+        user_id: ID del usuario a eliminar.
+
+    Raises:
+        HTTPException: 404 si el usuario no existe.
+    """
     try:
-        user_service.delete_user(user_id)
+        await user_service.delete_user(user_id)
     except NotFoundException as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
