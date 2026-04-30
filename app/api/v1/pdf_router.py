@@ -7,7 +7,7 @@ router = APIRouter()
 async def upload_pdf(file: UploadFile = File(...)):
     # 1. Validación de formato
     if not file.filename.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Formato no válido")
+        raise HTTPException(status_code=400, detail="El archivo debe ser un PDF")
 
     content = await file.read()
     
