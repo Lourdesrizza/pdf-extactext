@@ -1,154 +1,63 @@
-```
+extracText - Extractor de texto PDF
+Proyecto académico - Desarrollo de Software (3er Año) - UTN FRSR - 2026.
 
----
+Descripción del Proyecto
+extracText es una aplicación de extracción de texto de archivos PDF desarrollada siguiendo principios de arquitectura limpia. El sistema permite extraer texto de forma local (CLI) o mediante una API RESTful, almacenando metadatos y resultados en MongoDB y detectando archivos duplicados mediante checksum SHA256.
 
-##  Licencia
-Este proyecto es desarrollado con fines académicos para la cátedra de **Desarrollo de Software** de la **Universidad Tecnológica Nacional - Facultad Regional San Rafael (UTN FRSR)**.
+Integrantes del Equipo
 
-<div
-```markdown
-#  extracText — Extractor de Texto PDF
+Legajo 10853 - Magallanes Angelina
+Legajo 10902 - Puente Maite
+Legajo 10913 - Rizza Lourdes
+Legajo 10917 - Roda Jeremias
 
-<div align="center">
 
-![Python](https://img.shields.io/badge/Python-3.12+-blue.svg?style=for-the-badge&logo=python)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-009688.svg?style=for-the-badge&logo=fastapi)
-![MongoDB](https://img.shields.io/badge/MongoDB-4.7+-47A248.svg?style=for-the-badge&logo=mongodb)
-![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
 
-**Proyecto Académico — Desarrollo de Software (3er Año)**  
-**UTN FRSR — 2026**
+Tecnologías y Librerías
 
-</div>
+Core: Python 3.12+, FastAPI, Pydantic
 
----
+Base de Datos: MongoDB (Motor asíncrono)
 
-##  Descripción del Proyecto
-**extracText** es una aplicación de extracción de texto de archivos PDF desarrollada siguiendo principios de arquitectura limpia y las mejores prácticas de ingeniería de software. El sistema permite:
-- Extraer texto de archivos PDF de forma local (**CLI**) o remota (**API RESTful**).
-- Procesar documentos directamente en memoria sin persistencia temporal.
-- Almacenar metadatos y resultados en **MongoDB**.
-- Detectar archivos duplicados mediante checksum **SHA256**.
-- Limpiar y normalizar el texto extraído automáticamente.
+Gestión: UV (Gestor de paquetes), Docker
 
----
+Procesamiento PDF: pypdf para CLI y PyMuPDF para API
 
-##  Integrantes del Equipo
-| Legajo | Nombre | Rol Principal |
-|--------|--------|---------------|
-| **10853** | Magallanes Angelina
-| **10902** | Puente Maite
-| **10913** | Rizza Lourdes
-| **10917** | Roda Jeremias
+Arquitectura del Sistema
 
-**Cátedra:** Desarrollo de Software (3er Año - UTN FRSR - 2026)
+El proyecto se organiza en 4 capas desacopladas siguiendo Clean Architecture:
 
----
+Presentación: API Routers y entrada de CLI
 
-##  Tecnologías y Librerías
+Aplicación: Servicios de lógica y DTOs
 
-### Core Framework
-| Librería | Versión | Propósito |
-|----------|---------|-----------|
-| **FastAPI** | >=0.111.0 | Framework web asíncrono de alto rendimiento |
-| **Motor** | >=3.7.1 | Driver asíncrono para MongoDB |
-| **Pydantic** | >=2.7.0 | Validación de datos y esquemas |
-| **UV** | - | Gestor de paquetes ultra-rápido |
+Dominio: Entidades y reglas de negocio puras
 
-### Procesamiento de PDFs
-*   **PyMuPDF (fitz):** Utilizado en la API para lectura directa desde memoria sin persistencia temporal.
-*   **pypdf:** Utilizado en el módulo CLI por su simplicidad y velocidad local.
-*   **Opcionales:** `pdfplumber` (tablas) y `Tesseract OCR` (escaneados).
+Infraestructura: Implementación de base de datos y librerías externas
 
----
+Instalación y Configuración
 
-##  Arquitectura del Sistema
-
-### Capas del Sistema (Clean Architecture)
-El proyecto sigue una arquitectura en **4 capas** bien separadas, comunicadas a través de interfaces abstractas:
-
-1.  **Presentation Layer (API/CLI):** Routers de FastAPI y puntos de entrada de consola.
-2.  **Application Layer (Services):** Orquestación de lógica, DTOs y casos de uso.
-3.  **Domain Layer (Entities):** Reglas de negocio puras, modelos y definiciones de repositorios.
-4.  **Infrastructure Layer (Persistence):** Implementación concreta de MongoDB y librerías de terceros.
-
-### Principios de Ingeniería Aplicados
-*   **12-Factor App:** Configuración externalizada (`.env`), gestión de dependencias aisladas y procesos sin estado.
-*   **SOLID:** Responsabilidad única, código abierto/cerrado e inversión de dependencias.
-*   **Clean Code:** Aplicación de **DRY** (Don't Repeat Yourself), **KISS** (Keep It Simple) y **YAGNI**.
-
----
-
-##  Instalación y Configuración
-
-### Requisitos Previos
-- Python 3.12+
-- [UV](https://github.com/astral-sh/uv) (Gestor de paquetes)
-- Docker Desktop (para MongoDB)
-
-### Paso 1: Clonar y Configurar
-```bash
+Paso 1: Clonar el Repositorio
 git clone https://github.com/TU_USUARIO/extracText.git
 cd extracText
-copy .env.example .env
-```
 
-### Paso 2: Instalación de Dependencias
-```bash
-# Instalación rápida con uv
+Paso 2: Configurar Entorno
+Copia el archivo .env.example a .env y ajusta las variables de entorno necesarias.
+
+Paso 3: Instalar Dependencias
 uv sync --all-extras
-```
 
-### Paso 3: Levantar Base de Datos
-```bash
-# Iniciar contenedor de MongoDB
+Paso 4: Levantar Infraestructura
 docker run -d -p 27017:27017 --name mongo mongo:7
-```
 
-### Paso 4: Ejecución
-*   **Modo API:** `uv run uvicorn app.main:app --reload`  
-    *Documentación Swagger: http://localhost:8000/docs*
-*   **Modo CLI:** `python main.py "archivo.pdf" "salida.txt"`
+Uso de la Aplicación
 
----
+Modo API: uv run uvicorn app.main:app --reload
 
-##  Estructura del Proyecto
-```text
-pdf-extactext/
-├── app/                # Aplicación API (Capa de arquitectura)
-│   ├── api/            # Capa Presentación (Routers)
-│   ├── application/    # Capa Aplicación (Servicios/DTOs)
-│   ├── domain/         # Capa Dominio (Entidades/Interfaces)
-│   └── infrastructure/ # Capa Infraestructura (DB/Schemas)
-├── src/                # Scripts standalone (CLI)
-├── tests/              # Suite de pruebas con Pytest
-├── main.py             # Entry point CLI
-└── pyproject.toml      # Dependencias y configuración
-```
+Modo CLI: python main.py "ruta/al/archivo.pdf"
 
----
+Licencia
 
-##  Testing y Calidad
-```bash
-# Ejecutar todos los tests automatizados
-uv run pytest
+Este proyecto es desarrollado con fines académicos para la carrera de Ingeniería en Sistemas de Información de la Universidad Tecnológica Nacional - Facultad Regional San Rafael (UTN FRSR).
 
-# Con reporte de cobertura
-uv run pytest --cov=app --cov=src
-```
-
----
-
-##  Licencia
-Este proyecto es desarrollado con fines académicos para la cátedra de **Desarrollo de Software** de la **Universidad Tecnológica Nacional - Facultad Regional San Rafael (UTN FRSR)**.
-
-<div align="center">
-
-**UTN FRSR — Ingeniería en Sistemas de Información — 2026**
-
-[ ⬆ Volver al inicio ](#-extractext--extractor-de-texto-pdf)
-
-</div>
-```
-
-```
+UTN FRSR - 2026
