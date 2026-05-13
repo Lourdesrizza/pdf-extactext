@@ -1,0 +1,225 @@
+@startuml
+allowmixing
+' --- LAYOUT Y ESTILO ---
+top to bottom direction
+skinparam roundcorner 15
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam defaultFontName "Segoe UI"
+
+' --- PALETA DE COLORES ---
+skinparam class {
+    BackgroundColor #FFF0F5
+    ArrowColor #FF69B4
+    BorderColor #FFB6C1
+    FontColor #4A4A4A
+    HeaderBackgroundColor #FFB6C1
+}
+skinparam package {
+    BackgroundColor #FAFAFA
+    BorderColor #FF69B4
+    FontColor #FF69B4
+    FontSize 14
+    Style strict
+}
+skinparam interface {
+    BackgroundColor #FFE4E1
+    BorderColor #FF69B4
+}
+skinparam database {
+    BackgroundColor #FFF0F5
+    BorderColor #FF69B4
+}
+
+' --- CAPA 1: PRESENTACIÓN (FastAPI) ---
+package "1. Capa de Presentación (FastAPI)" {
+    class "UserRoutes" as UserRouter << (C,#FFC0CB) >> {
+        + create_user(request: UserCreateRequest): UserResponse
+        + get_user(user_id: str): UserResponse
+        + get_all_users(): List[UserResponse]
+        + update_user(user_id: str, request: UserUpdateRequest): UserResponse
+        + deactivate_user(user_id: str): UserResponse
+        + delete_user(user_id: str): None
+    }
+    
+    class "PDFRouter" as PDFRouter << (C,#FFC0CB) >> {
+        + upload_pdf(file: UploadFile): JSONResponse
+    }
+}
+
+' --- CAPA 2: APLICACIÓN (Services/DTOs) ---
+package "2. Capa de Aplicación (Services/DTOs)" {
+    class "UserService" as UserService << (S,#FFC0CB) >> {
+        - _repository: UserRepository
+        + create_user(request: UserCreateRequest): UserResponse
+        + get_user_by_id(user_id: str): UserResponse
+        + get_all_users(): List[UserResponse]
+        + update_user(user_id: str, request: UserUpdateRequest): UserResponse
+        + deactivate_user(user_id: str): UserResponse
+        + delete_user(user_id: str): None
+        - _map_to_response(user: User): UserResponse
+    }
+    
+    class "UserCreateRequest" as UserCreateRequest << (D,#E6E6FA) >> {
+        + email: EmailStr
+        + full_name: str
+    }
+    
+    class "UserUpdateRequest" as UserUpdateRequest << (D,#E6E6FA) >> {
+        + full_name: str
+    }
+    
+    class "UserResponse" as UserResponse << (D,#E6E6FA) >> {
+        + id: str
+        + email: str
+        + full_name: str
+        + is_active: bool
+        + created_at: Optional[datetime]
+    }
+}
+
+' --- CAPA 3: DOMINIO (Entities/Repositories/Exceptions) ---
+package "3. Capa de Dominio (Lógica Core)" {
+    class "User" as User << (E,#FFB6C1) >> {
+        + id: Optional[str]
+        + email: str
+        + full_name: str
+        + is_active: bool
+        + created_at: Optional[datetime]
+        + activate(): None
+        + deactivate(): None
+        + update_profile(full_name: str): None
+        + __eq__(other: object): bool
+        + __hash__(): int
+    }
+    
+    interface "UserRepository" as UserRepository << (I,#FFE4E1) >> {
+        + {abstract} find_by_id(user_id: str): Optional[User]
+        + {abstract} find_by_email(email: str): Optional[User]
+        + {abstract} find_all(): List[User]
+        + {abstract} create(user: User): User
+        + {abstract} update(user: User): User
+        + {abstract} delete(user_id: str): None
+    }
+    
+    class "PDFService" as PDFService << (S,#FFC0CB) >> {
+        + {static} get_checksum(content: bytes): str
+        + {static} extract_text(content: bytes): str
+    }
+    
+    class "DomainException" as DomainException << (E,#FFB6C1) Exception >> {
+        + message: str
+    }
+    
+    class "NotFoundException" as NotFoundException << (E,#FFB6C1) Exception >> {
+        + resource_name: str
+        + resource_id: str
+    }
+    
+    class "ValidationException" as ValidationException << (E,#FFB6C1) Exception >> {
+        + field: str
+        + message: str
+    }
+}
+
+' --- CAPA 4: INFRAESTRUCTURA (Database/Repository implementations) ---
+package "4. Capa de Infraestructura (Database)" {
+    class "MongoUserRepository" as MongoUserRepository << (R,#FFC0CB) >> {
+        - _collection: AsyncIOMotorCollection
+        + find_by_id(user_id: str): Optional[User]
+        + find_by_email(email: str): Optional[User]
+        + find_all(): List[User]
+        + create(user: User): User
+        + update(user: User): User
+        + delete(user_id: str): None
+        - _to_entity(user_in_db: UserInDB): User
+    }
+    
+    class "UserCreate" as UserCreate << (S,#E6E6FA) >> {
+        + email: EmailStr
+        + full_name: str
+        + is_active: bool
+    }
+    
+    class "UserUpdate" as UserUpdate << (S,#E6E6FA) >> {
+        + full_name: Optional[str]
+        + is_active: Optional[bool]
+    }
+    
+    class "UserInDB" as UserInDB << (S,#E6E6FA) >> {
+        + id: str
+        + email: EmailStr
+        + full_name: str
+        + is_active: bool
+        + created_at: datetime
+        + updated_at: Optional[datetime]
+    }
+    
+    class "get_database_session()" as get_database_session << (F,#D3D3D3) >> {
+        + __call__(): AsyncIOMotorDatabase
+    }
+    
+    class "get_user_repository()" as get_user_repository << (F,#D3D3D3) >> {
+        + __call__(): UserRepository
+    }
+    
+    class "get_user_service()" as get_user_service << (F,#D3D3D3) >> {
+        + __call__(): UserService
+    }   
+    
+    class "ApplicationSettings" as ApplicationSettings << (C,#D3D3D3) >> {
+        + API_V1_STR: str
+        + DEBUG: bool
+        + DATABASE_URL: str
+        + DB_NAME: str
+        + SECRET_KEY: str
+    }
+}
+
+database "MongoDB\n(Contenedor Docker)" as DB
+
+' --- RELACIONES Y DEPENDENCIAS ---
+
+' Capa de Presentación -> Capa de Aplicación
+UserRouter ..> UserService : "Usa"
+PDFRouter ..> PDFService : "Usa"
+
+' Capa de Aplicación -> Capa de Dominio
+UserService --> UserRepository : "Inyección de Dependencias"
+UserService ..> NotFoundException : "Lanza"
+UserService ..> ValidationException : "Lanza"
+
+' Capa de Dominio -> Capa de Infraestructura
+MongoUserRepository .up.|> UserRepository : "Implementa"
+
+' Capa de Infraestructura -> Base de datos
+MongoUserRepository --> DB : "Lee/Escribe"
+get_database_session --> DB : "Conecta"
+
+' Funciones de inyección
+get_user_repository --> MongoUserRepository : "Crea"
+get_user_service --> UserService : "Crea"
+
+' DTOs
+UserRouter ..> UserCreateRequest : "Usa"
+UserRouter ..> UserUpdateRequest : "Usa"
+UserRouter ..> UserResponse : "Usa"
+UserService ..> UserCreateRequest : "Usa"
+UserService ..> UserUpdateRequest : "Usa"
+UserService ..> UserResponse : "Usa"
+
+' Entidades
+UserService ..> User : "Usa"
+MongoUserRepository ..> User : "Usa"
+MongoUserRepository ..> UserInDB : "Usa"
+MongoUserRepository ..> UserCreate : "Usa"
+MongoUserRepository ..> UserUpdate : "Usa"
+
+' Excepciones
+NotFoundException --|> DomainException : "Hereda"
+ValidationException --|> DomainException : "Hereda"
+
+' Configuración
+get_database_session ..> ApplicationSettings : "Usa"
+
+@enduml
