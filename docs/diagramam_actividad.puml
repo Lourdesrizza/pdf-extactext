@@ -1,0 +1,67 @@
+@startuml
+' --- ESTILOS VISUALES AESTHETIC ---
+skinparam Activity {
+    BackgroundColor #FFE4E1
+    BorderColor #FF69B4
+    FontColor #333333
+    DiamondBackgroundColor #FFF0F5
+    DiamondBorderColor #FFB6C1
+}
+skinparam ArrowColor #FF69B4
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+
+' Estilo de los carriles (Capas)
+skinparam partition {
+    BorderColor #FF69B4
+    BackgroundColor #FAFAFA
+    FontColor #FF69B4
+    FontSize 16
+}
+
+title Flujo de Creación de Usuario (Arquitectura Limpia)
+
+' --- CARRILES POR CAPA ---
+|1. Capa de Presentación|
+start
+:Cliente envía petición POST /users;
+:UserRouter recibe el JSON\ny lo valida como UserCreateRequest;
+
+|2. Capa de Aplicación|
+:UserService recibe UserCreateRequest;
+:Llama al repositorio para\nbuscar el email;
+
+|4. Capa de Infraestructura|
+:MongoUserRepository consulta\nla base de datos;
+
+|2. Capa de Aplicación|
+if (¿El email ya está registrado?) then (Sí)
+  |3. Capa de Dominio|
+  :Se lanza ValidationException\n("El email ya existe");
+  
+  |1. Capa de Presentación|
+  :FastAPI ataja la excepción;
+  :Retorna HTTP 400 Bad Request;
+  stop
+else (No)
+  |3. Capa de Dominio|
+  :Se crea la Entidad "User"\n(id=None, is_active=True);
+  
+  |2. Capa de Aplicación|
+  :UserService solicita\nguardar el nuevo User;
+  
+  |4. Capa de Infraestructura|
+  :MongoUserRepository mapea\nUser -> UserInDB (agrega fechas);
+  :Se inserta el documento en MongoDB;
+  :Retorna la Entidad User\ncon el ID generado;
+  
+  |2. Capa de Aplicación|
+  :UserService mapea la Entidad\nUser -> UserResponse (DTO);
+  
+  |1. Capa de Presentación|
+  :UserRouter serializa el UserResponse;
+  :Retorna HTTP 201 Created\ncon los datos del usuario;
+  stop
+endif
+
+@enduml
