@@ -209,3 +209,4 @@ __marimo__/
 #Extensiones (sugerencias del profesor)
 .vscode/
 *.code-workspace
+nul

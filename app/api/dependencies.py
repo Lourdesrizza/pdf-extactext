@@ -5,8 +5,12 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.application.services.user_service import UserService
 from app.domain.repositories.user_repository import UserRepository
+from app.domain.repositories.document_repository import DocumentRepository
 from app.infrastructure.database.connection import get_database_session
 from app.infrastructure.repositories.mongo_user_repository import MongoUserRepository
+from app.infrastructure.repositories.mongo_document_repository import (
+    MongoDocumentRepository,
+)
 
 
 async def get_user_repository(
@@ -35,3 +39,17 @@ async def get_user_service(
         Instancia de UserService configurada.
     """
     return UserService(user_repository)
+
+
+async def get_document_repository(
+    database: AsyncIOMotorDatabase = Depends(get_database_session),
+) -> DocumentRepository:
+    """Provee el repositorio de documentos con MongoDB.
+
+    Args:
+        database: Sesión de base de datos MongoDB de Motor.
+
+    Returns:
+        Instancia de MongoDocumentRepository.
+    """
+    return MongoDocumentRepository(database)
