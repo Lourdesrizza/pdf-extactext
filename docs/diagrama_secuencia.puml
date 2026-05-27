@@ -1,5 +1,5 @@
 @startuml
-' --- ESTILOS VISUALES AESTHETIC ---
+
 skinparam Sequence {
     BackgroundColor #FFF0F5
     BorderColor #FF69B4
@@ -41,430 +41,118 @@ skinparam database {
     FontColor #4A4A4A
 }
 
-skinparam boundary {
-    BackgroundColor #E6E6FA
-    BorderColor #FF69B4
-    FontColor #4A4A4A
-}
-
-skinparam control {
-    BackgroundColor #E6E6FA
-    BorderColor #FF69B4
-    FontColor #4A4A4A
-}
-
-skinparam entity {
-    BackgroundColor #E6E6FA
-    BorderColor #FF69B4
-    FontColor #4A4A4A
-}
-
-skinparam title {
-    FontColor #FF69B4
-    FontSize 20
-    FontStyle bold
-}
+title Diagrama de Secuencia - PDFExtractex (Vista Simplificada)
 
 ' ================================================================
-' PARTE 1: SECUENCIA - SUBIR Y PROCESAR PDF
+' ACTORES PRINCIPALES
 ' ================================================================
 
 box "1. Capa de Presentación" #FFFFFF
     actor "Cliente" as Cliente
-    boundary "PDFRouter" as PDFRouter
+    participant "R1: PDFRouter" as PDFRouter
+    participant "R2: UserRouter" as UserRouter
 end box
 
 box "2. Capa de Aplicación" #FFFFFF
-    participant "PDFService" as PDFServ
+    participant "S1: PDFService" as PDFServ
+    participant "S2: UserService" as UserServ
 end box
 
 box "3. Capa de Dominio" #FFFFFF
-    participant "utilidad\npypdf/\nPyMuPDF" as LibPDF
+    database "Librería PDF" as LibPDF
 end box
 
 box "4. Infraestructura" #FFFFFF
-    database "Sistema de\nArchivos" as FS
-end box
-
-title Diagrama de Secuencia - PDFExtractex
-
-== Flujo 1: Subir y Procesar PDF ==
-Cliente -> PDFRouter : POST /upload (file: UploadFile)
-activate PDFRouter #E6E6FA
-
-    note right of PDFRouter
-      **Validación Inicial**
-      Verificar extensión .pdf
-    end note
-
-    PDFRouter -> PDFRouter : if not file.filename.endswith(".pdf")
-    alt Extensión no válida
-        PDFRouter --> Cliente : HTTP 400 Bad Request
-        note right
-          **Error: "El archivo debe ser un PDF"**
-        end note
-        deactivate PDFRouter
-    else Extensión válida
-        PDFRouter -> PDFRouter : content = await file.read()
-
-        PDFRouter -> PDFServ : get_checksum(content: bytes)
-        activate PDFServ #E6E6FA
-            PDFServ -> PDFServ : Generar hash SHA256
-            PDFServ --> PDFRouter : return checksum (str)
-        deactivate PDFServ
-
-        PDFRouter -> PDFServ : extract_text(content: bytes)
-        activate PDFServ #E6E6FA
-            PDFServ -> LibPDF : fitz.open(stream=content, filetype="pdf")
-            activate LibPDF #E6E6FA
-                LibPDF --> PDFServ : doc (Document object)
-            deactivate LibPDF
-            loop Por cada página del PDF
-                PDFServ -> LibPDF : page.get_text()
-                activate LibPDF #E6E6FA
-                    LibPDF --> PDFServ : text (str)
-                deactivate LibPDF
-                PDFServ -> PDFServ : text += page_text
-            end
-            PDFServ --> PDFRouter : return text.strip()
-        deactivate PDFServ
-
-        alt Texto vacío (no extraíble)
-            PDFRouter --> Cliente : HTTP 400 Bad Request
-            note right
-              **Error: "El PDF no contiene texto extraíble"**
-            end note
-            deactivate PDFRouter
-        else Texto extraído correctamente
-            PDFRouter -> PDFRouter : Construir JSONResponse
-            note right
-              filename, checksum,
-              extracted_text_preview,
-              message
-            end note
-            PDFRouter --> Cliente : HTTP 200 OK + JSON
-            deactivate PDFRouter
-        end
-    end
-
-== Flujo 2: Extracción y Limpieza Local (CLI) ==
-
-Cliente -> FS : Ejecutar main.py <ruta_pdf>
-activate FS #E6E6FA
-    FS -> LibPDF : extract_text_from_pdf(ruta_pdf)
-    activate LibPDF #E6E6FA
-        LibPDF -> LibPDF : PdfReader(path)
-        LibPDF -> LibPDF : Iterar páginas y extraer texto
-        LibPDF --> FS : texto_crudo (str)
-    deactivate LibPDF
-
-    FS -> FS : clean_text(texto_crudo)
-    note right of FS
-      **Lógica de Limpieza:**
-      1. Normalizar saltos de línea
-      2. Eliminar espacios múltiples
-      3. Unir líneas de párrafos
-      4. Formatear párrafos
-    end note
-
-    FS -> FS : get_estadisticas(texto_limpio)
-    FS --> FS : dict {caracteres, palabras, lineas, parrafos}
-
-    FS -> FS : save_output(texto, ruta_salida)
-    note right of FS
-      **Guardado:**
-      - Crear directorios si no existen
-      - Escribir archivo .txt
-      - Mostrar en consola
-    end note
-
-    FS --> Cliente : Archivo .txt generado + estadísticas
-    deactivate FS
-
-' ================================================================
-' PARTE 2: SECUENCIA - CREACIÓN DE USUARIO
-' ================================================================
-
-box "5. Capa de Presentación" #FEF9FF
-    boundary "UserRouter" as UserRouter
-end box
-
-box "6. Capa de Aplicación" #FEF9FF
-    participant "UserService" as UserServ
-end box
-
-box "7. Capa de Dominio" #FEF9FF
-    entity "User" as UserEnt
-    participant "UserRepository\n(Interface)" as UserRepo
-end box
-
-box "8. Infraestructura" #FEF9FF
-    participant "MongoUser\nRepository" as MongoRepo
     database "MongoDB" as MongoDB
 end box
 
-== Flujo 3: Creación de Usuario (POST /users) ==
+' ================================================================
+' ESCENARIO 1: SUBIR Y PROCESAR PDF
+' ================================================================
 
-Cliente -> UserRouter : POST /users (UserCreateRequest)
-activate UserRouter #E6E6FA
+== Escenario 1: Subir y Procesar PDF ==
+
+Cliente -> PDFRouter : POST /upload (archivo PDF)
+activate PDFRouter
+
+    PDFRouter -> PDFServ : extract_text(contenido)
+    activate PDFServ
+
+        PDFServ -> LibPDF : procesar documento
+        activate LibPDF
+            LibPDF --> PDFServ : texto extraído
+        deactivate LibPDF
+
+        PDFServ --> PDFRouter : texto (str)
+    deactivate PDFServ
+
+    alt Texto extraído exitosamente
+        PDFRouter --> Cliente : HTTP 200 OK + JSONResponse
+    else Archivo no válido o PDF sin texto
+        PDFRouter --> Cliente : HTTP 400 Bad Request
+    end
+
+deactivate PDFRouter
+
+' ================================================================
+' ESCENARIO 2: CREAR USUARIO
+' ================================================================
+
+== Escenario 2: Crear Usuario (POST /users) ==
+
+Cliente -> UserRouter : POST /users (datos)
+activate UserRouter
+
     UserRouter -> UserServ : create_user(request)
-    activate UserServ #E6E6FA
+    activate UserServ
 
-        note right of UserServ
-          **Paso 1: Validar Email Único**
-        end note
-        UserServ -> UserRepo : find_by_email(request.email)
-        activate UserRepo #E6E6FA
-            UserRepo -> MongoRepo : find_by_email(email)
-            activate MongoRepo #E6E6FA
-                MongoRepo -> MongoDB : find_one({"email": email})
-                activate MongoDB #E6E6FA
-                    MongoDB --> MongoRepo : document | null
-                deactivate MongoDB
-                MongoRepo --> UserRepo : Optional[<User>]
-            deactivate MongoRepo
-        deactivate UserRepo
-
-        alt Email ya existe
-            UserServ -> UserServ : raise ValidationException("email", "El email ya está registrado")
-            UserServ --> UserRouter : throw ValidationException
+        alt Email ya registrado
+            UserServ --> UserRouter : ValidationException
             UserRouter --> Cliente : HTTP 400 Bad Request
-            note right
-              **Error: "El email ya está registrado"**
-            end note
-            deactivate UserServ
-            deactivate UserRouter
-        else Email único
+        else Email válido
 
-            note right of UserServ
-              **Paso 2: Crear Entidad**
-            end note
-            UserServ -> UserEnt : User(email, full_name)
-            activate UserEnt #E6E6FA
-                UserEnt -> UserEnt : __post_init__()
-                note right
-                  Normaliza email (lower().strip())
-                  y full_name (strip())
-                end note
-                UserEnt --> UserServ : User (id=None, is_active=True)
-            deactivate UserEnt
+            UserServ -> MongoDB : insert(documento)
+            activate MongoDB
+                MongoDB --> UserServ : ID generado
+            deactivate MongoDB
 
-            note right of UserServ
-              **Paso 3: Persistir en DB**
-            end note
-            UserServ -> UserRepo : create(user: User)
-            activate UserRepo #E6E6FA
-                UserRepo -> MongoRepo : create(user)
-                activate MongoRepo #E6E6FA
-                    MongoRepo -> MongoRepo : UserCreate(email, full_name, is_active)
-                    MongoRepo -> MongoRepo : UserInDB(...model_dump())
-                    MongoRepo -> MongoDB : insert_one(document)
-                    activate MongoDB #E6E6FA
-                        MongoDB --> MongoRepo : InsertedId
-                    deactivate MongoDB
-                    MongoRepo -> MongoRepo : user_in_db.id = str(inserted_id)
-                    MongoRepo -> MongoRepo : _to_entity(user_in_db) → User
-                    MongoRepo --> UserRepo : User (con ID asignado)
-                deactivate MongoRepo
-            deactivate UserRepo
+            UserServ --> UserRouter : UserResponse
+        end
 
-            note right of UserServ
-              **Paso 4: Mapear a Response**
-            end note
-            UserServ -> UserServ : _map_to_response(user: User)
-            UserServ --> UserRouter : UserResponse (DTO)
-        deactivate UserServ
+    deactivate UserServ
 
     UserRouter --> Cliente : HTTP 201 Created + UserResponse
     deactivate UserRouter
-end
 
-== Flujo 4: Obtener Usuario por ID (GET /users/{id}) ==
+' ================================================================
+' ESCENARIO 3: OBTENER USUARIO POR ID
+' ================================================================
 
-Cliente -> UserRouter : GET /users/{user_id}
-activate UserRouter #E6E6FA
-    UserRouter -> UserServ : get_user_by_id(user_id)
-    activate UserServ #E6E6FA
-        UserServ -> UserRepo : find_by_id(user_id)
-        activate UserRepo #E6E6FA
-            UserRepo -> MongoRepo : find_by_id(user_id)
-            activate MongoRepo #E6E6FA
-                MongoRepo -> MongoDB : find_one({"_id": ObjectId(user_id)})
-                activate MongoDB #E6E6FA
-                    MongoDB --> MongoRepo : document | null
-                deactivate MongoDB
-                alt Usuario no encontrado
-                    MongoRepo --> UserRepo : None
-                    UserRepo --> UserServ : None
-                    UserServ -> UserServ : raise NotFoundException("Usuario", user_id)
-                    UserServ --> UserRouter : throw NotFoundException
-                    UserRouter --> Cliente : HTTP 404 Not Found
-                    deactivate UserServ
-                    deactivate UserRouter
-                else Usuario encontrado
-                    MongoRepo -> MongoRepo : _to_entity(UserInDB)
-                    MongoRepo --> UserRepo : User
-                deactivate MongoRepo
-            deactivate UserRepo
+== Escenario 3: Obtener Usuario por ID (GET /users/{id}) ==
 
-            UserServ -> UserServ : _map_to_response(user)
-            UserServ --> UserRouter : UserResponse
-        deactivate UserServ
+Cliente -> UserRouter : GET /users/{id}
+activate UserRouter
+
+    UserRouter -> UserServ : get_user_by_id(id)
+    activate UserServ
+
+        UserServ -> MongoDB : find_by_id(id)
+        activate MongoDB
+
+            alt Usuario no encontrado
+                MongoDB --> UserServ : null
+                UserServ --> UserRouter : NotFoundException
+                UserRouter --> Cliente : HTTP 404 Not Found
+            else Usuario encontrado
+                MongoDB --> UserServ : documento
+            end
+
+        deactivate MongoDB
+
+        UserServ --> UserRouter : UserResponse
+    deactivate UserServ
+
     UserRouter --> Cliente : HTTP 200 OK + UserResponse
-    deactivate UserRouter
-
-== Flujo 5: Actualizar Usuario (PUT /users/{id}) ==
-
-Cliente -> UserRouter : PUT /users/{user_id} (UserUpdateRequest)
-activate UserRouter #E6E6FA
-    UserRouter -> UserServ : update_user(user_id, request)
-    activate UserServ #E6E6FA
-        UserServ -> UserRepo : find_by_id(user_id)
-        activate UserRepo #E6E6FA
-            UserRepo -> MongoRepo : find_by_id(user_id)
-            activate MongoRepo #E6E6FA
-                MongoRepo -> MongoDB : find_one({"_id": ObjectId(user_id)})
-                activate MongoDB #E6E6FA
-                    MongoDB --> MongoRepo : document | null
-                deactivate MongoDB
-                alt Usuario no existe
-                    MongoRepo --> UserRepo : None
-                    UserRepo --> UserServ : None
-                    UserServ -> UserServ : raise NotFoundException("Usuario", user_id)
-                    UserServ --> UserRouter : throw NotFoundException
-                    UserRouter --> Cliente : HTTP 404 Not Found
-                    deactivate UserServ
-                    deactivate UserRouter
-                else Usuario existe
-                    MongoRepo -> MongoRepo : _to_entity(UserInDB)
-                    MongoRepo --> UserRepo : User
-                deactivate MongoRepo
-            deactivate UserRepo
-
-            note right of UserServ
-              **Aplicar cambios**
-            end note
-            UserServ -> UserEnt : update_profile(request.full_name)
-            activate UserEnt #E6E6FA
-                UserEnt --> UserServ : full_name actualizado
-            deactivate UserEnt
-
-            UserServ -> UserRepo : update(user: User)
-            activate UserRepo #E6E6FA
-                UserRepo -> MongoRepo : update(user)
-                activate MongoRepo #E6E6FA
-                    MongoRepo -> MongoDB : update_one(filter, {"$set": update_data})
-                    activate MongoDB #E6E6FA
-                        MongoDB --> MongoRepo : resultado update
-                    deactivate MongoDB
-                    MongoRepo --> UserRepo : User actualizado
-                deactivate MongoRepo
-            deactivate UserRepo
-
-            UserServ -> UserServ : _map_to_response(user)
-            UserServ --> UserRouter : UserResponse
-        deactivate UserServ
-    UserRouter --> Cliente : HTTP 200 OK + UserResponse
-    deactivate UserRouter
-
-== Flujo 6: Desactivar Usuario (PATCH /users/{id}/deactivate) ==
-
-Cliente -> UserRouter : PATCH /users/{user_id}/deactivate
-activate UserRouter #E6E6FA
-    UserRouter -> UserServ : deactivate_user(user_id)
-    activate UserServ #E6E6FA
-        UserServ -> UserRepo : find_by_id(user_id)
-        activate UserRepo #E6E6FA
-            UserRepo -> MongoRepo : find_by_id(user_id)
-            activate MongoRepo #E6E6FA
-                MongoRepo -> MongoDB : find_one({"_id": ObjectId(user_id)})
-                activate MongoDB #E6E6FA
-                    MongoDB --> MongoRepo : document | null
-                deactivate MongoDB
-                alt Usuario no existe
-                    MongoRepo --> UserRepo : None
-                    UserRepo --> UserServ : None
-                    UserServ -> UserServ : raise NotFoundException("Usuario", user_id)
-                    UserServ --> UserRouter : throw NotFoundException
-                    UserRouter --> Cliente : HTTP 404 Not Found
-                    deactivate UserServ
-                    deactivate UserRouter
-                else Usuario existe
-                    MongoRepo -> MongoRepo : _to_entity(UserInDB)
-                    MongoRepo --> UserRepo : User
-                deactivate MongoRepo
-            deactivate UserRepo
-
-            note right of UserServ
-              **Cambiar estado**
-            end note
-            UserServ -> UserEnt : deactivate()
-            activate UserEnt #E6E6FA
-                UserEnt -> UserEnt : is_active = False
-                UserEnt --> UserServ : Usuario desactivado
-            deactivate UserEnt
-
-            UserServ -> UserRepo : update(user: User)
-            activate UserRepo #E6E6FA
-                UserRepo -> MongoRepo : update(user)
-                activate MongoRepo #E6E6FA
-                    MongoRepo -> MongoDB : update_one(filter, {"$set": {is_active: false}})
-                    activate MongoDB #E6E6FA
-                        MongoDB --> MongoRepo : resultado update
-                    deactivate MongoDB
-                    MongoRepo --> UserRepo : User actualizado
-                deactivate MongoRepo
-            deactivate UserRepo
-
-            UserServ -> UserServ : _map_to_response(user)
-            UserServ --> UserRouter : UserResponse
-        deactivate UserServ
-    UserRouter --> Cliente : HTTP 200 OK + UserResponse
-    deactivate UserRouter
-
-== Flujo 7: Eliminar Usuario (DELETE /users/{id}) ==
-
-Cliente -> UserRouter : DELETE /users/{user_id}
-activate UserRouter #E6E6FA
-    UserRouter -> UserServ : delete_user(user_id)
-    activate UserServ #E6E6FA
-        UserServ -> UserRepo : find_by_id(user_id)
-        activate UserRepo #E6E6FA
-            UserRepo -> MongoRepo : find_by_id(user_id)
-            activate MongoRepo #E6E6FA
-                MongoRepo -> MongoDB : find_one({"_id": ObjectId(user_id)})
-                activate MongoDB #E6E6FA
-                    MongoDB --> MongoRepo : document | null
-                deactivate MongoDB
-                alt Usuario no existe
-                    MongoRepo --> UserRepo : None
-                    UserRepo --> UserServ : None
-                    UserServ -> UserServ : raise NotFoundException("Usuario", user_id)
-                    UserServ --> UserRouter : throw NotFoundException
-                    UserRouter --> Cliente : HTTP 404 Not Found
-                    deactivate UserServ
-                    deactivate UserRouter
-                else Usuario existe
-                    MongoRepo -> MongoRepo : _to_entity(UserInDB)
-                    MongoRepo --> UserRepo : User
-                deactivate MongoRepo
-            deactivate UserRepo
-
-            UserServ -> UserRepo : delete(user_id)
-            activate UserRepo #E6E6FA
-                UserRepo -> MongoRepo : delete(user_id)
-                activate MongoRepo #E6E6FA
-                    MongoRepo -> MongoDB : delete_one({"_id": ObjectId(user_id)})
-                    activate MongoDB #E6E6FA
-                        MongoDB --> MongoRepo : resultado delete
-                    deactivate MongoDB
-                    MongoRepo --> UserRepo : None
-                deactivate MongoRepo
-            deactivate UserRepo
-
-            UserServ --> UserRouter : None
-        deactivate UserServ
-    UserRouter --> Cliente : HTTP 204 No Content
-    deactivate UserRouter
+deactivate UserRouter
 
 @enduml
