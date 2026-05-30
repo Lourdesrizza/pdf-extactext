@@ -1,0 +1,48 @@
+@import url('https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css');
+
+/* Acá abajo dejas el resto de tu código tal cual lo tenías: */
+.swagger-ui {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+.swagger-ui .info .title {
+    color: #d87093 !important; 
+}
+
+.swagger-ui .topbar {
+    background-color: #ffb6c1 !important;
+}
+
+.swagger-ui .btn.execute {
+    background-color: #ff69b4 !important;
+    border-color: #ff69b4 !important;
+    color: white !important;
+    border-radius: 8px !important;
+}
+/* custom.css */
+/* Cambiar la tipografía general */
+.swagger-ui {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+/* Cambiar el color del título principal a un tono rosa/coquette */
+.swagger-ui .info .title {
+    color: #d87093 !important; 
+}
+
+/* Cambiar la barra de arriba (topbar) si la querés rosa pastel */
+.swagger-ui .topbar {
+    background-color: #ffb6c1 !important;
+}
+
+/* Cambiar el color del botón "Execute" */
+.swagger-ui .btn.execute {
+    background-color: #ff69b4 !important;
+    border-color: #ff69b4 !important;
+    color: white !important;
+    border-radius: 8px !important;
+}
+/* Cambiar el fondo de toda la página a un rosa pastel */
+body {
+    background-color: #fff0f5 !important; 
+}
