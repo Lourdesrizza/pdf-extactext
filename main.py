@@ -3,7 +3,7 @@
 ORQUESTADOR PRINCIPAL - main.py
 ================================================================================
 Responsabilidad: Coordinar el flujo completo de extracción y procesamiento.
-Equipo a cargo: [Nombre del integrante de Orquestación]
+Equipo a cargo: Magallanes Angelina, Puente Maité, Rizza Lourdes, Roda Jeremias
 Uso:
     python main.py <ruta_pdf> [ruta_salida]
 ================================================================================
