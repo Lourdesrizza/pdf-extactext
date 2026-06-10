@@ -104,27 +104,6 @@ Cliente envía POST /api/v1/upload
 
 ---
 
-## Requisitos del Proyecto (Etapa N° 1)
-
-Según la consigna oficial de UTN FRSR 2026:
-
-| Requisito | Cumplimiento |
-|---|---|
-| Enviar y procesar archivo PDF | ✅ `POST /api/v1/upload` |
-| Extraer solo texto del contenido | ✅ `PDFService.extract_text()` |
-| Persistir con checksum SHA-256 | ✅ `MongoDocumentRepository` |
-| CRUD de documentos persistidos | ✅ Endpoints GET / PATCH / DELETE |
-| Validar formato y tamaño del PDF | ✅ Firma `%PDF`, límite 5 MB |
-| No persistir temporalmente | ✅ Procesamiento en memoria |
-| No duplicar documentos en BD | ✅ Búsqueda por checksum previa |
-| Lenguaje: Python | ✅ Python 3.12 |
-| Framework: FastAPI | ✅ FastAPI 0.136 |
-| Gestor de paquetes: uv | ✅ `uv sync` |
-| Metodología: TDD | ✅ `tests/` con pytest |
-| Gestión: GitHub Projects | ✅ |
-
----
-
 ## Endpoints principales
 
 | Método | Ruta | Descripción |
