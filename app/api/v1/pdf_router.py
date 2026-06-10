@@ -50,10 +50,14 @@ async def upload_pdf(file: UploadFile = File(...)):
     Returns:
         JSON con el nombre del archivo, checksum y texto extraído.
     """
-    if not file.filename or not file.filename.endswith(".pdf"):
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="El archivo debe ser un PDF")
 
     content = await file.read()
+    try:
+        PDFService.validate_pdf_content(content)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))
 
     checksum = PDFService.get_checksum(content)
     text = PDFService.extract_text(content)
