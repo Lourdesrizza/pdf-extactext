@@ -1,20 +1,16 @@
-"""Configuración de conexión a base de datos MongoDB."""
-from motor.motor_asyncio import AsyncIOMotorClient
+# app/infrastructure/database/connection.py
+from functools import lru_cache
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from app.core.config import settings
 
-# 1. Creamos el cliente de MongoDB conectado a la URL de tus settings
-client = AsyncIOMotorClient(settings.DATABASE_URL)
+_client: AsyncIOMotorClient | None = None
 
-# 2. Seleccionamos el nombre de tu base de datos (podés cambiar "pdf_extractor_db" al nombre que quieras)
-database = client.pdf_extractor_db
+def get_client() -> AsyncIOMotorClient:
+    global _client
+    if _client is None:
+        _client = AsyncIOMotorClient(settings.DATABASE_URL)
+    return _client
 
-# 3. Hacemos la función asíncrona porque Motor trabaja de forma no bloqueante
-async def get_database_session():
-    """Generador de conexión a la base de datos MongoDB para FastAPI."""
-    try:
-        # En MongoDB, simplemente entregamos la base de datos entera
-        yield database
-    finally:
-        # Nota: Motor maneja el cierre de conexiones automáticamente mediante un "pool".
-        # No necesitamos cerrar la sesión en cada request como hacíamos en SQL.
-        pass
+async def get_database_session() -> AsyncIOMotorDatabase:
+    """Dependency para FastAPI — entrega la DB correcta según el .env."""
+    yield get_client()[settings.DB_NAME]
