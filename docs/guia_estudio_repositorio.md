@@ -1,4 +1,4 @@
-# Guia de estudio del repositorio pdf-extactext
+# Estudio del repositorio pdf-extactext
 
 Esta guia esta pensada para estudiar el proyecto desde cero. La idea no es memorizar
 cada linea, sino entender que responsabilidad tiene cada parte y como viaja una
