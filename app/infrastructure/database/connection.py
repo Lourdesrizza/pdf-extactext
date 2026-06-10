@@ -1,6 +1,9 @@
 """Configuración de conexión a base de datos MongoDB."""
 
+from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pymongo.errors import PyMongoError, ServerSelectionTimeoutError
+
 from app.core.config import settings
 
 _client: AsyncIOMotorClient | None = None
@@ -14,4 +17,12 @@ def get_client() -> AsyncIOMotorClient:
 
 
 async def get_database_session() -> AsyncIOMotorDatabase:
-    yield get_client()[settings.DB_NAME]
+    try:
+        database = get_client()[settings.DB_NAME]
+        await database.command("ping")
+        yield database
+    except (ServerSelectionTimeoutError, PyMongoError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Base de datos no disponible",
+        ) from error

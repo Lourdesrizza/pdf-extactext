@@ -1,6 +1,8 @@
+import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, File, HTTPException, Path, UploadFile, status
+from pymongo.errors import PyMongoError, ServerSelectionTimeoutError
 
 from app.api.dependencies import get_document_repository
 from app.domain.entities.document import Document as DomainDocument
@@ -12,6 +14,7 @@ from app.infrastructure.database.schemas.document_schema import (
 from app.services.pdf_service import PDFService
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _to_response(document: DomainDocument) -> DocumentResponse:
@@ -94,7 +97,15 @@ async def get_all_documents(
     Returns:
         Lista de documentos.
     """
-    documents = await document_repository.find_all()
+    try:
+        documents = await document_repository.find_all()
+    except (ServerSelectionTimeoutError, PyMongoError) as error:
+        logger.error("Error de conexion a MongoDB al obtener documentos: %s", error)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Base de datos no disponible",
+        ) from error
+
     return [_to_response(doc) for doc in documents]
 
 
